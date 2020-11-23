@@ -1,5 +1,6 @@
 from os.path import join
 import torch
+import sklearn
 from tqdm import tqdm
 import networkx as nx
 import numpy as np
@@ -21,7 +22,8 @@ class G_data(object):
         self.num_class = num_class
         self.feat_dim = feat_dim
         self.g_list = g_list
-        self.sep_data()
+        self.num_graphs = len(g_list)
+        # self.sep_data()
 
     def sep_data(self, seed=0):
         skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
@@ -33,6 +35,13 @@ class G_data(object):
         train_idx, test_idx = self.idx_list[fold_idx]
         self.train_gs = [self.g_list[i] for i in train_idx]
         self.test_gs = [self.g_list[i] for i in test_idx]
+
+    def split_data(self, train_ratio=0.5, valid_ratio=0.25):
+        n_train = int(self.num_graphs*train_ratio)
+        n_valid = int((train_ratio+valid_ratio)*self.num_graphs)
+        self.train_gs = [self.g_list[i] for i in range(0, n_train)]
+        self.valid_gs = [self.g_list[i] for i in range(n_train, n_train+n_valid)]
+        self.test_gs = [self.g_list[i] for i in range(n_train+n_valid, self.num_graphs)]
 
 
 class FileLoader(object):
@@ -170,6 +179,8 @@ class FileLoaderNew(object):
         new_g_list = []
         for g in tqdm(g_list, desc="Process graph", unit='graphs'):
             new_g_list.append(self.process_g(g))
+
+        new_g_list = sklearn.utils.shuffle(new_g_list, random_state=self.seed)
 
         num_class = 2
         feat_dim = new_g_list[0].feas.shape[1]

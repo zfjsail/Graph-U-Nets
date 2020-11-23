@@ -57,4 +57,4 @@ class GNet(nn.Module):
         loss = F.nll_loss(logits, labels)
         _, preds = torch.max(logits, 1)
         acc = torch.mean((preds == labels).float())
-        return loss, acc
+        return loss, acc, logits
