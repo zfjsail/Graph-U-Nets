@@ -93,6 +93,8 @@ class Trainer:
         # avg_loss, avg_acc = sum(losses) / n_samples, sum(accs) / n_samples
         # return avg_loss.item(), avg_acc.item()
 
+        loss_ret = (sum(losses) / n_samples).data.item()
+
         if return_best_thr:
             precs, recs, thrs = precision_recall_curve(y_true, y_score)
             f1s = 2 * precs * recs / (precs + recs)
@@ -101,9 +103,9 @@ class Trainer:
             f1s = f1s[~np.isnan(f1s)]
             best_thr = thrs[np.argmax(f1s)]
             logger.info("best threshold=%4f, f1=%.4f", best_thr, np.max(f1s))
-            return sum(losses) / n_samples, [prec, rec, f1, auc], best_thr
+            return loss_ret, [prec, rec, f1, auc], best_thr
         else:
-            return sum(losses) / n_samples, [prec, rec, f1, auc], None
+            return loss_ret, [prec, rec, f1, auc], None
 
     def train(self):
         max_acc = 0.0
