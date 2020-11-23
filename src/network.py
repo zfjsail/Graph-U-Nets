@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils.ops import GCN, GraphUnet, Initializer, norm_g
+from src.utils.ops import GCN, GraphUnet, Initializer, norm_g
 
 
 class GNet(nn.Module):

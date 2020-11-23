@@ -1,7 +1,7 @@
 import torch
 from tqdm import tqdm
 import torch.optim as optim
-from utils.dataset import GraphData
+from src.utils.dataset import GraphData
 
 
 class Trainer:

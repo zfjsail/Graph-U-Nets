@@ -1,10 +1,19 @@
+from os.path import join
 import torch
 from tqdm import tqdm
 import networkx as nx
 import numpy as np
 import torch.nn.functional as F
+from sklearn import preprocessing
 from sklearn.model_selection import StratifiedKFold
 from functools import partial
+
+from utils import settings
+
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')  # include timestamp
 
 
 class G_data(object):
@@ -36,7 +45,9 @@ class FileLoader(object):
 
     def gen_graph(self, f, i, label_dict, feat_dict, deg_as_tag):
         row = next(f).strip().split()
+        # print("row", row)
         n, label = [int(w) for w in row]
+        # print("n & label", n, label)
         if label not in label_dict:
             label_dict[label] = len(label_dict)
         g = nx.Graph()
@@ -76,7 +87,7 @@ class FileLoader(object):
         label_dict = {}
         feat_dict = {}
 
-        with open('data/%s/%s.txt' % (args.data, args.data), 'r') as f:
+        with open('../data/%s/%s.txt' % (args.data, args.data), 'r') as f:
             lines = f.readlines()
         f = self.line_genor(lines)
         n_g = int(next(f).strip())
@@ -96,6 +107,72 @@ class FileLoader(object):
             new_g_list.append(f_n(g))
         num_class = len(label_dict)
         feat_dim = len(tagset)
+
+        print('# classes: %d' % num_class, '# maximum node tag: %d' % feat_dim)
+        return G_data(num_class, feat_dim, new_g_list)
+
+
+class FileLoaderNew(object):
+    def __init__(self, args):
+        self.args = args
+
+    def gen_graph(self, adj, inf_features, label, cur_node_features):
+        # g = nx.Graph()
+        # g.add_nodes_from(list(range(len(cur_vids))))
+        g = nx.from_numpy_array(adj)
+        node_tags = np.concatenate((cur_node_features, inf_features), axis=1)  #todo
+        g.label = label
+        g.remove_nodes_from(list(nx.isolates(g)))
+        g.node_tags = node_tags
+        return g
+
+    def process_g(self, g):
+        g.feas = torch.FloatTensor(g.node_tags)
+        A = torch.FloatTensor(nx.to_numpy_matrix(g))
+        g.A = A + torch.eye(g.number_of_nodes())
+        return g
+
+    def load_data(self):
+        args = self.args
+        file_dir = join(settings.DATA_DIR, args.data)
+        print('loading data ...')
+
+        graphs = np.load(join(file_dir, "adjacency_matrix.npy")).astype(np.float32)
+
+        # wheather a user has been influenced
+        # wheather he/she is the ego user
+        influence_features = np.load(
+                join(file_dir, "influence_feature.npy")).astype(np.float32)
+        logger.info("influence features loaded!")
+
+        labels = np.load(join(file_dir, "label.npy"))
+        logger.info("labels loaded!")
+
+        vertices = np.load(join(file_dir, "vertex_id.npy"))
+        logger.info("vertex ids loaded!")
+
+        vertex_features = np.load(join(file_dir, "vertex_feature.npy"))
+        vertex_features = preprocessing.scale(vertex_features)
+        # vertex_features = torch.FloatTensor(vertex_features)
+        logger.info("global vertex features loaded!")
+
+        n_g = len(graphs)
+
+        g_list = []
+        label_dict = {0: 0, 1: 1}
+
+        for i in tqdm(range(n_g), desc="Create graph", unit='graphs'):
+            cur_vids = vertices[i]
+            cur_node_features = vertex_features[cur_vids]
+            g = self.gen_graph(graphs[i], influence_features[i], labels[i], cur_node_features)
+            g_list.append(g)
+
+        new_g_list = []
+        for g in tqdm(g_list, desc="Process graph", unit='graphs'):
+            new_g_list.append(self.process_g(g))
+
+        num_class = 2
+        feat_dim = new_g_list[0].feas.shape[1]
 
         print('# classes: %d' % num_class, '# maximum node tag: %d' % feat_dim)
         return G_data(num_class, feat_dim, new_g_list)
