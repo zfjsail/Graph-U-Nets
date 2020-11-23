@@ -23,6 +23,7 @@ class G_data(object):
         self.feat_dim = feat_dim
         self.g_list = g_list
         self.num_graphs = len(g_list)
+        logger.info("number of graphs: %d", self.num_graphs)
         # self.sep_data()
 
     def sep_data(self, seed=0):
@@ -38,7 +39,7 @@ class G_data(object):
 
     def split_data(self, train_ratio=0.5, valid_ratio=0.25):
         n_train = int(self.num_graphs*train_ratio)
-        n_valid = int((train_ratio+valid_ratio)*self.num_graphs)
+        n_valid = int((train_ratio+valid_ratio)*self.num_graphs)-n_train
         self.train_gs = [self.g_list[i] for i in range(0, n_train)]
         self.valid_gs = [self.g_list[i] for i in range(n_train, n_train+n_valid)]
         self.test_gs = [self.g_list[i] for i in range(n_train+n_valid, self.num_graphs)]
@@ -175,6 +176,9 @@ class FileLoaderNew(object):
             cur_node_features = vertex_features[cur_vids]
             g = self.gen_graph(graphs[i], influence_features[i], labels[i], cur_node_features)
             g_list.append(g)
+
+            if i > settings.TEST_SIZE:
+                break
 
         new_g_list = []
         for g in tqdm(g_list, desc="Process graph", unit='graphs'):
