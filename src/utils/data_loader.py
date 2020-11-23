@@ -180,7 +180,7 @@ class FileLoaderNew(object):
         for g in tqdm(g_list, desc="Process graph", unit='graphs'):
             new_g_list.append(self.process_g(g))
 
-        new_g_list = sklearn.utils.shuffle(new_g_list, random_state=self.seed)
+        new_g_list = sklearn.utils.shuffle(new_g_list, random_state=args.seed)
 
         num_class = 2
         feat_dim = new_g_list[0].feas.shape[1]
