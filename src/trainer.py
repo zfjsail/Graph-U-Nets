@@ -49,8 +49,8 @@ class Trainer:
             cur_len, gs, hs, ys = batch
             gs, hs, ys = map(self.to_cuda, [gs, hs, ys])
             loss, acc, _ = model(gs, hs, ys)
-            losses.append(loss*cur_len)
-            accs.append(acc*cur_len)
+            losses.append(loss.item()*cur_len)
+            accs.append(acc.item()*cur_len)
             n_samples += cur_len
             if optimizer is not None:
                 optimizer.zero_grad()
@@ -58,7 +58,8 @@ class Trainer:
                 optimizer.step()
 
         avg_loss, avg_acc = sum(losses) / n_samples, sum(accs) / n_samples
-        return avg_loss.item(), avg_acc.item()
+        # return avg_loss.item(), avg_acc.item()
+        return avg_loss, avg_acc
 
     def evaluate(self, epoch, data, model, thr=None, return_best_thr=False):
         model.eval()
@@ -69,11 +70,11 @@ class Trainer:
         for batch in tqdm(data, desc=str(epoch), unit='b'):
             cur_len, gs, hs, ys = batch
             # print("cur len", cur_len)
-            print("gs", len(gs), "hs", len(hs), "ys", len(ys))
+            # print("gs", len(gs), "hs", len(hs), "ys", len(ys))
             gs, hs, ys = map(self.to_cuda, [gs, hs, ys])
             loss, acc, out = model(gs, hs, ys)
-            losses.append(loss*cur_len)
-            accs.append(acc*cur_len)
+            losses.append(loss.data.item()*cur_len)
+            # accs.append(acc*cur_len)
             n_samples += cur_len
 
             y_true += ys.data.tolist()
@@ -95,7 +96,8 @@ class Trainer:
         # avg_loss, avg_acc = sum(losses) / n_samples, sum(accs) / n_samples
         # return avg_loss.item(), avg_acc.item()
 
-        loss_ret = (sum(losses) / n_samples).data.item()
+        # loss_ret = (sum(losses) / n_samples).data.item()
+        loss_ret = sum(losses) / n_samples
 
         if return_best_thr:
             precs, recs, thrs = precision_recall_curve(y_true, y_score)
