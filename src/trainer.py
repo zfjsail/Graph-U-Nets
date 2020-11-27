@@ -27,7 +27,7 @@ class Trainer:
         if torch.cuda.is_available():
             self.net.cuda()
 
-        tensorboard_log_dir = 'tensorboard/%s_%s' % (args.model, args.data)
+        tensorboard_log_dir = 'tensorboard/%s_%s' % ("graph-u-net", args.data)
         os.makedirs(tensorboard_log_dir, exist_ok=True)
         shutil.rmtree(tensorboard_log_dir)
         tensorboard_logger.configure(tensorboard_log_dir)
