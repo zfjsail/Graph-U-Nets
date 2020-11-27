@@ -2,10 +2,18 @@ import argparse
 import random
 import time
 import torch
+import os
+import shutil
 import numpy as np
+from tensorboard_logger import tensorboard_logger
 from src.network import GNet
 from src.trainer import Trainer
 from src.utils.data_loader import FileLoader, FileLoaderNew
+
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s') # include timestamp
 
 
 def get_args():
@@ -14,11 +22,11 @@ def get_args():
     parser.add_argument('-data', default='twitter', help='data folder name')
     parser.add_argument('-fold', type=int, default=1, help='fold (1..10)')
     parser.add_argument('-num_epochs', type=int, default=200, help='epochs')
-    parser.add_argument('-batch', type=int, default=64, help='batch size')
+    parser.add_argument('-batch', type=int, default=2048, help='batch size')
     parser.add_argument('-lr', type=float, default=0.001, help='learning rate')
     parser.add_argument('-deg_as_tag', type=int, default=0, help='1 or degree')
     parser.add_argument('-l_num', type=int, default=3, help='layer num')
-    parser.add_argument('-h_dim', type=int, default=512, help='hidden dim')
+    parser.add_argument('-h_dim', type=int, default=128, help='hidden dim')
     parser.add_argument('-l_dim', type=int, default=128, help='layer dim')
     parser.add_argument('-drop_n', type=float, default=0.3, help='drop net')
     parser.add_argument('-drop_c', type=float, default=0.3, help='drop output')
@@ -58,6 +66,7 @@ def main():
     start = time.time()
     G_data = FileLoaderNew(args).load_data()
     print('load data using ------>', time.time()-start)
+
     # if args.fold == 0:
     #     for fold_idx in range(10):
     #         print('start training ------> fold', fold_idx+1)

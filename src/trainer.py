@@ -1,7 +1,10 @@
+import os
+import shutil
 import torch
 import numpy as np
 from tqdm import tqdm
 import torch.optim as optim
+from tensorboard_logger import tensorboard_logger
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import precision_recall_curve
@@ -23,6 +26,12 @@ class Trainer:
         self.init(args, G_data.train_gs, G_data.valid_gs, G_data.test_gs)
         if torch.cuda.is_available():
             self.net.cuda()
+
+        tensorboard_log_dir = 'tensorboard/%s_%s' % (args.model, args.data)
+        os.makedirs(tensorboard_log_dir, exist_ok=True)
+        shutil.rmtree(tensorboard_log_dir)
+        tensorboard_logger.configure(tensorboard_log_dir)
+        logger.info('tensorboard logging to %s', tensorboard_log_dir)
 
     def init(self, args, train_gs, valid_gs, test_gs):
         print('#train: %d, valid: %d, #test: %d' % (len(train_gs), len(valid_gs), len(test_gs)))
@@ -59,6 +68,8 @@ class Trainer:
 
         avg_loss, avg_acc = sum(losses) / n_samples, sum(accs) / n_samples
         # return avg_loss.item(), avg_acc.item()
+        tensorboard_logger.log_value('train_loss', avg_loss, epoch + 1)
+
         return avg_loss, avg_acc
 
     def evaluate(self, epoch, data, model, thr=None, return_best_thr=False):
@@ -98,6 +109,15 @@ class Trainer:
 
         # loss_ret = (sum(losses) / n_samples).data.item()
         loss_ret = sum(losses) / n_samples
+
+        if return_best_thr:
+            log_desc = "valid_"
+        else:
+            log_desc = "test_"
+
+        tensorboard_logger.log_value(log_desc + 'loss', loss_ret, epoch + 1)
+        tensorboard_logger.log_value(log_desc + 'auc', auc, epoch + 1)
+        tensorboard_logger.log_value(log_desc + 'f1', f1, epoch + 1)
 
         if return_best_thr:
             precs, recs, thrs = precision_recall_curve(y_true, y_score)
@@ -144,11 +164,17 @@ class Trainer:
                 best_thr = thr
                 best_valid_metrics = val_metrics
                 best_test_metrics = test_metrics
+                logger.info("*************BEST UNTIL NOW****************")
+                print("validation loss:", val_loss, "metrics", val_metrics, "thr:", thr)
+                print("test loss:", test_loss, "metrics", test_metrics)
+                logger.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
             # max_acc = max(max_acc, acc)
             # print(test_str % (e_id, loss, acc, max_acc))
 
         # with open(self.args.acc_file, 'a+') as f:
         #     f.write(line_str % (self.fold_idx, max_acc))
+
+        logger.info("*************Finally****************")
 
         print("best validation metrics", best_valid_metrics, "thr:", best_thr)
         print("best test metrics", best_test_metrics)
