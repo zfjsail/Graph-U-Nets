@@ -122,6 +122,26 @@ class FileLoader(object):
         return G_data(num_class, feat_dim, new_g_list)
 
 
+def load_w2v_feature(file, max_idx=0):
+    with open(file, "rb") as f:
+        nu = 0
+        for line in f:
+            content = line.strip().split()
+            nu += 1
+            if nu == 1:
+                n, d = int(content[0]), int(content[1])
+                feature = [[0.] * d for i in range(max(n, max_idx + 1))]
+                continue
+            index = int(content[0])
+            while len(feature) <= index:
+                feature.append([0.] * d)
+            for i, x in enumerate(content[1:]):
+                feature[index][i] = float(x)
+    for item in feature:
+        assert len(item) == d
+    return np.array(feature, dtype=np.float32)
+
+
 class FileLoaderNew(object):
     def __init__(self, args):
         self.args = args
@@ -166,6 +186,12 @@ class FileLoaderNew(object):
         # vertex_features = torch.FloatTensor(vertex_features)
         logger.info("global vertex features loaded!")
 
+        embedding_path = join(file_dir, "prone.emb2")
+        max_vertex_idx = np.max(vertices)
+        embedding = load_w2v_feature(embedding_path, max_vertex_idx)
+        # self.embedding = torch.FloatTensor(embedding)
+        logger.info("%d-dim embedding loaded!", embedding[0].shape[1])
+
         n_g = len(graphs)
 
         g_list = []
@@ -174,6 +200,8 @@ class FileLoaderNew(object):
         for i in tqdm(range(n_g), desc="Create graph", unit='graphs'):
             cur_vids = vertices[i]
             cur_node_features = vertex_features[cur_vids]
+            cur_node_emb = embedding[cur_vids]
+            cur_node_features = np.concatenate((cur_node_features, cur_node_emb), axis=1)
             g = self.gen_graph(graphs[i], influence_features[i], labels[i], cur_node_features)
             g_list.append(g)
 
