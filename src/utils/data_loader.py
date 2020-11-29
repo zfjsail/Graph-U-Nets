@@ -190,7 +190,7 @@ class FileLoaderNew(object):
         max_vertex_idx = np.max(vertices)
         embedding = load_w2v_feature(embedding_path, max_vertex_idx)
         # self.embedding = torch.FloatTensor(embedding)
-        logger.info("%d-dim embedding loaded!", embedding[0].shape[1])
+        logger.info("%d-dim embedding loaded!", embedding[0].shape[0])
 
         n_g = len(graphs)
 
