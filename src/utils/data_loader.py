@@ -1,4 +1,5 @@
 from os.path import join, isfile
+import sys
 import torch
 import sklearn
 from tqdm import tqdm
@@ -168,6 +169,7 @@ class FileLoaderNew(object):
         if self.args.data != "wechat":
             g.remove_nodes_from(list(nx.isolates(g)))
         g.node_tags = node_tags
+        del adj, cur_node_features, inf_features
         return g
 
     def process_g(self, g):
@@ -292,6 +294,7 @@ class FileLoaderNew(object):
             cur_node_features = np.concatenate((cur_node_features, cur_node_emb), axis=1)
             g = self.gen_graph(graphs[i], influence_features[i], labels[i], cur_node_features)
             g_list.append(g)
+            del cur_vids, cur_node_features, cur_node_emb
 
             if i > settings.TEST_SIZE:
                 break
