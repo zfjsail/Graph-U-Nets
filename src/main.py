@@ -19,7 +19,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s') # incl
 def get_args():
     parser = argparse.ArgumentParser(description='Args for graph predition')
     parser.add_argument('-seed', type=int, default=42, help='seed')
-    parser.add_argument('-data', default='twitter', help='data folder name')
+    parser.add_argument('-data', default='wechat', help='data folder name')
+    parser.add_argument('-label-type', default='click', help='data folder name')
     parser.add_argument('-fold', type=int, default=1, help='fold (1..10)')
     parser.add_argument('-num_epochs', type=int, default=100, help='epochs')
     parser.add_argument('-batch', type=int, default=2048, help='batch size')
@@ -53,7 +54,7 @@ def app_run(args, G_data, fold_idx):
 
 
 def run_model(args, G_data):
-    G_data.split_data()
+    G_data.split_data(args)
     net = GNet(G_data.feat_dim, G_data.num_class, args)
     trainer = Trainer(args, net, G_data)
     trainer.train()
