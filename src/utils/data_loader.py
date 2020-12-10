@@ -265,7 +265,7 @@ class FileLoaderNew(object):
             labels_test = np.load(join(file_dir, "test_{}_labels.npy".format(self.args.label_type)))
             logger.info("labels test loaded!")
 
-            labels = np.vstack((labels_train, labels_valid, labels_test))
+            labels = np.concatenate((labels_train, labels_valid, labels_test))
             logger.info("labels loaded")
 
             vertices_train = np.load(join(file_dir, "train_vertex_ids.npy"))
