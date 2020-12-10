@@ -165,7 +165,8 @@ class FileLoaderNew(object):
         g = nx.from_numpy_array(adj)
         node_tags = np.concatenate((cur_node_features, inf_features), axis=1)  #todo
         g.label = label
-        g.remove_nodes_from(list(nx.isolates(g)))
+        if self.args.data != "wechat":
+            g.remove_nodes_from(list(nx.isolates(g)))
         g.node_tags = node_tags
         return g
 
